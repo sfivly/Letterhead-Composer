@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Letterhead Composer</title>
+
+<!-- ============ THIRD-PARTY LIBRARIES (CDN) ============ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============================= SIDEBAR ============================= -->
+  <aside class="sidebar">
+    <h1>Letterhead Composer</h1>
+    <span class="tag">Official document generator</span>
+
+    <div class="side-section">
+      <h2>Letterhead</h2>
+      <label class="upload-btn">
+        📄 Upload letterhead PDF
+        <input type="file" id="letterheadInput" accept="application/pdf">
+      </label>
+      <div class="file-status empty" id="letterheadStatus">No file uploaded yet</div>
+    </div>
+
+    <div class="side-section">
+      <h2>Custom font</h2>
+      <label class="upload-btn">
+        🔤 Upload TTF font
+        <input type="file" id="fontInput" accept=".ttf,font/ttf">
+      </label>
+      <div class="file-status empty" id="fontStatus">Using fallback serif</div>
+    </div>
+
+    <div class="side-section">
+      <h2>Page 1 top offset</h2>
+      <div class="field">
+        <label for="topOffset">Distance from top edge (cm)</label>
+        <input type="number" id="topOffset" value="4" step="0.1" min="0">
+      </div>
+    </div>
+
+    <div class="side-section">
+      <h2>Margins (cm)</h2>
+      <div class="row-2">
+        <div class="field"><label for="marginLeft">Left</label><input type="number" id="marginLeft" value="1.5" step="0.1" min="0"></div>
+        <div class="field"><label for="marginRight">Right</label><input type="number" id="marginRight" value="1.5" step="0.1" min="0"></div>
+      </div>
+      <div class="field"><label for="marginBottom">Bottom (all pages)</label><input type="number" id="marginBottom" value="1.5" step="0.1" min="0"></div>
+    </div>
+
+    <div class="side-section">
+      <h2>Typography</h2>
+      <div class="field">
+        <label for="fontFamily">Font</label>
+        <select id="fontFamily">
+          <option value="'Noto Serif', Georgia, 'Times New Roman', serif" selected>Fallback serif</option>
+          <option value="CustomFont">Custom (Mandaram / uploaded)</option>
+        </select>
+      </div>
+      <div class="row-2">
+        <div class="field"><label for="fontSize">Size (pt)</label><input type="number" id="fontSize" value="12" step="0.5" min="6"></div>
+        <div class="field"><label for="lineSpacing">Line spacing</label><input type="number" id="lineSpacing" value="1.5" step="0.1" min="1"></div>
+      </div>
+      <div class="field">
+        <label for="alignment">Alignment</label>
+        <select id="alignment">
+          <option value="justify" selected>Justified</option>
+          <option value="left">Left</option>
+          <option value="center">Center</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="side-section">
+      <button class="btn-primary" id="exportBtn">Export PDF</button>
+      <div class="hint">Exports a print-ready PDF preserving the letterhead, margins, font and pagination shown in the preview.</div>
+    </div>
+
+    <div class="hint">
+      Typing shortcuts in the editor: "# ", "## ", "### " for headings, "- " or "* " for bullets, "1. " for numbered lists, "&gt; " for quotes, "---" for a horizontal rule, and **bold**, *italic*, __underline__ inline.
+    </div>
+  </aside>
+
+  <!-- ============================= MAIN ============================= -->
+  <main class="main">
+    <div class="toolbar" id="toolbar">
+      <button data-cmd="undo" title="Undo">↶ Undo</button>
+      <button data-cmd="redo" title="Redo">↷ Redo</button>
+      <div class="sep"></div>
+      <select id="headingSelect" title="Heading">
+        <option value="P">Paragraph</option>
+        <option value="H1">Heading 1</option>
+        <option value="H2">Heading 2</option>
+        <option value="H3">Heading 3</option>
+      </select>
+      <div class="sep"></div>
+      <button data-cmd="bold" title="Bold"><b>B</b></button>
+      <button data-cmd="italic" title="Italic"><i>I</i></button>
+      <button data-cmd="underline" title="Underline"><u>U</u></button>
+      <div class="sep"></div>
+      <button data-cmd="insertUnorderedList" title="Bullet list">• List</button>
+      <button data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <button data-cmd="indent" title="Increase indent">→ Indent</button>
+      <button data-cmd="outdent" title="Decrease indent">← Outdent</button>
+      <div class="sep"></div>
+      <button data-cmd="blockquote" title="Quote">❝ Quote</button>
+      <button data-cmd="hr" title="Horizontal line">— Line</button>
+    </div>
+
+    <div class="workarea">
+      <section class="pane">
+        <div class="pane-label">Editor</div>
+        <div class="pane-body">
+          <div id="editor" contenteditable="true" spellcheck="true">
+            <h1>Subject line goes here</h1>
+            <p>Dear Sir/Madam,</p>
+            <p>Start typing your letter here. This editor supports lightweight markup so you rarely need to touch the toolbar: type "**bold**", "*italic*" or "__underline__" and they convert automatically as you type. Start a line with "- " for a bullet, "1. " for a numbered item, or "&gt; " for a quotation.</p>
+            <p>Yours sincerely,</p>
+          </div>
+        </div>
+      </section>
+      <section class="pane">
+        <div class="pane-label">Live preview</div>
+        <div class="pane-body">
+          <div id="previewPages"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="export-overlay" id="exportOverlay">
+  <div class="spinner"></div>
+  <div id="exportOverlayText">Rendering pages…</div>
+</div>
+
+<!-- ============ APPLICATION MODULES ============ -->
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
